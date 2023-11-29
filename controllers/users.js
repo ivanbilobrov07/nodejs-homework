@@ -71,6 +71,9 @@ const getCurrent = (req, res) => {
 };
 
 const updateAvatar = async (req, res) => {
+  if (!req.file)
+    throw HttpError({ status: 400, message: "Please provide an avatar image" });
+
   const { path: tempUpload, originalname } = req.file;
   const { _id } = req.user;
 
@@ -81,6 +84,11 @@ const updateAvatar = async (req, res) => {
   await fs.rename(tempUpload, resultUpload);
 
   const avatarURL = path.join("avatars", fileName);
+  const prevAvatar = (await User.findById(_id)).avatarURL;
+
+  if (!prevAvatar.includes("gravatar")) {
+    await fs.unlink(path.join("public", prevAvatar));
+  }
 
   await User.findByIdAndUpdate(_id, { avatarURL });
 
